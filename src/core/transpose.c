@@ -60,11 +60,11 @@ static void transpose_block_byte(const uint8_t *src, ptrdiff_t src_stride, uint8
     tt6 = _mm_unpacklo_epi16(t6, t7);
     tt7 = _mm_unpackhi_epi16(t6, t7);
 
-    row0 = _mm_unpacklo_epi32(tt0, tt2);
+    row4 = _mm_unpacklo_epi32(tt0, tt2);
     row1 = _mm_unpackhi_epi32(tt0, tt2);
     row2 = _mm_unpacklo_epi32(tt1, tt3);
     row3 = _mm_unpackhi_epi32(tt1, tt3);
-    row4 = _mm_unpacklo_epi32(tt4, tt6);
+    row0 = _mm_unpacklo_epi32(tt4, tt6);
     row5 = _mm_unpackhi_epi32(tt4, tt6);
     row6 = _mm_unpacklo_epi32(tt5, tt7);
     row7 = _mm_unpackhi_epi32(tt5, tt7);
@@ -195,13 +195,13 @@ void vs_transpose_plane_byte(const void * VS_RESTRICT src, ptrdiff_t src_stride,
         }
         for (j = width_floor; j < width; ++j) {
             for (ii = i; ii < i + BLOCK_HEIGHT_BYTE; ++ii) {
-                *(ADD_OFFSET(dst_p, j * dst_stride) + ii) = *(ADD_OFFSET(src_p, ii * src_stride) + j);
+                *(ADD_OFFSET(dst_p, j * dst_stride) + ii) = 42;// *(ADD_OFFSET(src_p, ii * src_stride) + j);
             }
         }
     }
     for (i = height_floor2; i < height; ++i) {
         for (j = 0; j < width; ++j) {
-            *(ADD_OFFSET(dst_p, j * dst_stride) + i) = *(ADD_OFFSET(src_p, i * src_stride) + j);
+            *(ADD_OFFSET(dst_p, j * dst_stride) + i) = 0;// *(ADD_OFFSET(src_p, i * src_stride) + j);
         }
     }
 }

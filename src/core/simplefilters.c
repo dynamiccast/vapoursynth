@@ -245,7 +245,7 @@ static void VS_CC cropAbsCreate(const VSMap *in, VSMap *out, void *userData, VSC
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Crop", cropInit, cropGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "Crop", cropInit, cropGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 static void VS_CC cropRelCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
@@ -283,7 +283,7 @@ static void VS_CC cropRelCreate(const VSMap *in, VSMap *out, void *userData, VSC
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Crop", cropInit, cropGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "Crop", cropInit, cropGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -483,7 +483,7 @@ static void VS_CC addBordersCreate(const VSMap *in, VSMap *out, void *userData, 
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "AddBorders", addBordersInit, addBordersGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "AddBorders", addBordersInit, addBordersGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -665,7 +665,7 @@ static void VS_CC shufflePlanesCreate(const VSMap *in, VSMap *out, void *userDat
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "ShufflePlanes", shufflePlanesInit, shufflePlanesGetframe, shufflePlanesFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "ShufflePlanes", shufflePlanesInit, shufflePlanesGetframe, shufflePlanesFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -772,7 +772,7 @@ static void VS_CC separateFieldsCreate(const VSMap *in, VSMap *out, void *userDa
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "SeparateFields", separateFieldsInit, separateFieldsGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "SeparateFields", separateFieldsInit, separateFieldsGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -885,7 +885,7 @@ static void VS_CC doubleWeaveCreate(const VSMap *in, VSMap *out, void *userData,
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "DoubleWeave", doubleWeaveInit, doubleWeaveGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "DoubleWeave", doubleWeaveInit, doubleWeaveGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -926,7 +926,7 @@ static void VS_CC flipVerticalCreate(const VSMap *in, VSMap *out, void *userData
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "FlipVertical", singleClipInit, flipVerticalGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "FlipVertical", singleClipInit, flipVerticalGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -1026,7 +1026,7 @@ static void VS_CC flipHorizontalCreate(const VSMap *in, VSMap *out, void *userDa
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, d.flip ? "Turn180" : "FlipHorizontal", singleClipInit, flipHorizontalGetframe, singleClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, d.flip ? "Turn180" : "FlipHorizontal", singleClipInit, flipHorizontalGetframe, singleClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -1150,7 +1150,7 @@ static void VS_CC stackCreate(const VSMap *in, VSMap *out, void *userData, VSCor
         data = malloc(sizeof(d));
         *data = d;
 
-        vsapi->createFilter(in, out, d.vertical ? "StackVertical" : "StackHorizontal", stackInit, stackGetframe, stackFree, fmParallel, 0, data, core);
+        vsapi->createFilter(in, out, d.vertical ? "StackVertical" : "StackHorizontal", stackInit, stackGetframe, stackFree, NULL, fmParallel, 0, data, core);
     }
 }
 
@@ -1338,7 +1338,7 @@ static void VS_CC blankClipCreate(const VSMap *in, VSMap *out, void *userData, V
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "BlankClip", blankClipInit, blankClipGetframe, blankClipFree, d.keep ? fmUnordered : fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "BlankClip", blankClipInit, blankClipGetframe, blankClipFree, NULL, d.keep ? fmUnordered : fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -1417,7 +1417,7 @@ static void VS_CC assumeFPSCreate(const VSMap *in, VSMap *out, void *userData, V
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "AssumeFPS", assumeFPSInit, assumeFPSGetframe, singleClipFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "AssumeFPS", assumeFPSInit, assumeFPSGetframe, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -1587,7 +1587,7 @@ static void VS_CC frameEvalCreate(const VSMap *in, VSMap *out, void *userData, V
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "FrameEval", frameEvalInit, d.numpropsrc ? frameEvalGetFrameWithProps : frameEvalGetFrameNoProps, frameEvalFree, d.numpropsrc ? fmParallelRequests : fmUnordered, 0, data, core);
+    vsapi->createFilter(in, out, "FrameEval", frameEvalInit, d.numpropsrc ? frameEvalGetFrameWithProps : frameEvalGetFrameNoProps, frameEvalFree, NULL, d.numpropsrc ? fmParallelRequests : fmUnordered, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -1689,7 +1689,7 @@ static void VS_CC modifyFrameCreate(const VSMap *in, VSMap *out, void *userData,
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "ModifyFrame", modifyFrameInit, modifyFrameGetFrame, modifyFrameFree, fmParallelRequests, 0, data, core);
+    vsapi->createFilter(in, out, "ModifyFrame", modifyFrameInit, modifyFrameGetFrame, modifyFrameFree, NULL, fmParallelRequests, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -1780,7 +1780,7 @@ static void VS_CC transposeCreate(const VSMap *in, VSMap *out, void *userData, V
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Transpose", transposeInit, transposeGetFrame, transposeFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "Transpose", transposeInit, transposeGetFrame, transposeFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -1930,7 +1930,7 @@ static void VS_CC pemVerifierCreate(const VSMap *in, VSMap *out, void *userData,
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "PEMVerifier", pemVerifierInit, pemVerifierGetFrame, pemVerifierFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "PEMVerifier", pemVerifierInit, pemVerifierGetFrame, pemVerifierFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -2398,7 +2398,7 @@ static void VS_CC planeStatsCreate(const VSMap *in, VSMap *out, void *userData, 
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "PlaneStats", planeStatsInit, planeStatsGetFrame, planeStatsFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "PlaneStats", planeStatsInit, planeStatsGetFrame, planeStatsFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -2467,7 +2467,7 @@ static void VS_CC clipToPropCreate(const VSMap *in, VSMap *out, void *userData, 
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "ClipToProp", clipToPropInit, clipToPropGetFrame, clipToPropFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "ClipToProp", clipToPropInit, clipToPropGetFrame, clipToPropFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -2564,7 +2564,7 @@ static void VS_CC propToClipCreate(const VSMap *in, VSMap *out, void *userData, 
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "PropToClip", propToClipInit, propToClipGetFrame, propToClipFree, fmParallel, 0, data, core);
+    vsapi->createFilter(in, out, "PropToClip", propToClipInit, propToClipGetFrame, propToClipFree, NULL, fmParallel, 0, data, core);
 }
 
 //////////////////////////////////////////
@@ -2696,7 +2696,7 @@ static void VS_CC setFramePropCreate(const VSMap *in, VSMap *out, void *userData
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "SetFrameProp", setFramePropInit, setFramePropGetFrame, setFramePropFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "SetFrameProp", setFramePropInit, setFramePropGetFrame, setFramePropFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -2741,7 +2741,100 @@ static void VS_CC setFieldBasedCreate(const VSMap *in, VSMap *out, void *userDat
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "SetFieldBased", singleClipInit, setFieldBasedGetFrame, singleClipFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "SetFieldBased", singleClipInit, setFieldBasedGetFrame, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
+}
+
+typedef struct {
+    VSNodeRef *node;
+    const VSVideoInfo *vi;
+} ToneData;
+
+static const VSFrameRef *VS_CC ToneGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+
+    if (activationReason == arInitial) {
+        VSFrameRef *frame = NULL;
+        if (!d->f) {
+            frame = vsapi->newVideoFrame(d->vi.format, d->vi.width, d->vi.height, 0, core);
+            int bytesPerSample = (d->vi.format->id == pfCompatYUY2) ? 4 : d->vi.format->bytesPerSample;
+
+            for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
+                switch (bytesPerSample) {
+                case 1:
+                    vs_memset8(vsapi->getWritePtr(frame, plane), d->color[plane], vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane));
+                    break;
+                case 2:
+                    vs_memset16(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 2);
+                    break;
+                case 4:
+                    vs_memset32(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 4);
+                    break;
+                }
+            }
+
+            if (d->vi.fpsNum > 0) {
+                VSMap *frameProps = vsapi->getFramePropsRW(frame);
+                vsapi->propSetInt(frameProps, "_DurationNum", d->vi.fpsDen, paReplace);
+                vsapi->propSetInt(frameProps, "_DurationDen", d->vi.fpsNum, paReplace);
+            }
+        }
+
+        if (d->keep) {
+            if (frame)
+                d->f = frame;
+            return vsapi->cloneFrameRef(d->f);
+        }
+        else {
+            return frame;
+        }
+    }
+
+    return 0;
+}
+
+static void VS_CC ToneGetAudio(VSCore *core, const VSAPI *vsapi) {
+
+}
+
+static void VS_CC ToneInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+    vsapi->setVideoInfo(&d->vi, 1, node);
+    vsapi->setAudioInfo(node);
+}
+
+static void VS_CC ToneFree(void *instanceData, VSCore *core, const VSAPI *vsapi) {
+}
+
+static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData d = { 0 };
+    BlankClipData *data;
+    int hasvi = 0;
+    int err;
+
+    VSNodeRef *node = vsapi->propGetNode(in, "clip", 0, &err);
+
+    if (!err) {
+        d.vi = *vsapi->getVideoInfo(node);
+        vsapi->freeNode(node);
+        hasvi = 1;
+    }
+
+    d.vi.width = 640;
+    d.vi.height = 480;
+    d.vi.fpsNum = 24;
+    d.vi.fpsDen = 1;
+
+    d.vi.format = vsapi->getFormatPreset(pfRGB24, core);
+    d.vi.numFrames = int64ToIntS((d.vi.fpsNum * 10) / d.vi.fpsDen);
+
+    setBlack(d.color, d.vi.format);
+
+    d.color[0] = 255;
+
+    data = malloc(sizeof(d));
+    *data = d;
+
+    vsapi->createFilter(in, out, "Tone", ToneInit, ToneGetFrame, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -2772,4 +2865,5 @@ void VS_CC stdlibInitialize(VSConfigPlugin configFunc, VSRegisterFunction regist
     registerFunc("PropToClip", "clip:clip;prop:data:opt;", propToClipCreate, 0, plugin);
     registerFunc("SetFrameProp", "clip:clip;prop:data;delete:int:opt;intval:int[]:opt;floatval:float[]:opt;data:data[]:opt;", setFramePropCreate, 0, plugin);
     registerFunc("SetFieldBased", "clip:clip;value:int;", setFieldBasedCreate, 0, plugin);
+    registerFunc("Tone", "length:int;", ToneCreate, 0, plugin);
 }

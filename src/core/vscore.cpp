@@ -780,8 +780,8 @@ VSFunction::VSFunction(const std::string &argString, VSPublicFunction func, void
     }
 }
 
-VSNode::VSNode(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor, VSCore *core) :
-instanceData(instanceData), name(name), init(init), filterGetFrame(getFrame), free(free), filterMode(filterMode), apiMajor(apiMajor), core(core), flags(flags), hasVi(false), serialFrame(-1) {
+VSNode::VSNode(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterGetAudio getAudio, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor, VSCore *core) :
+instanceData(instanceData), name(name), init(init), filterGetFrame(getFrame), free(free), filterGetAudio(getAudio), filterMode(filterMode), apiMajor(apiMajor), core(core), flags(flags), hasVi(false), hasAu(false), serialFrame(-1) {
 
     if (flags & ~(nfNoCache | nfIsCache | nfMakeLinear))
         throw VSException("Filter " + name  + " specified unknown flags");
@@ -798,15 +798,17 @@ instanceData(instanceData), name(name), init(init), filterGetFrame(getFrame), fr
         throw VSException(vs_internal_vsapi.getError(out));
     }
 
-    if (!hasVi) {
+    if (!hasVi && !hasAu) {
         core->filterInstanceDestroyed();
-        throw VSException("Filter " + name + " didn't set vi");
+        throw VSException("Filter " + name + " didn't set video or audio");
     }
 
-    for (const auto &iter : vi) {
-        if (iter.numFrames <= 0) {
-            core->filterInstanceDestroyed();
-            throw VSException("Filter " + name + " returned zero or negative frame count");
+    if (hasVi) {
+        for (const auto &iter : vi) {
+            if (iter.numFrames <= 0) {
+                core->filterInstanceDestroyed();
+                throw VSException("Filter " + name + " returned zero or negative frame count");
+            }
         }
     }
 }
@@ -817,6 +819,10 @@ VSNode::~VSNode() {
 
 void VSNode::getFrame(const PFrameContext &ct) {
     core->threadPool->start(ct);
+}
+
+void VSNode::getAudio() {
+    filterGetAudio(core, &vs_internal_vsapi);
 }
 
 const VSVideoInfo &VSNode::getVideoInfo(int index) {
@@ -843,6 +849,10 @@ void VSNode::setVideoInfo(const VSVideoInfo *vi, int numOutputs) {
         this->vi[i].flags = flags;
     }
     hasVi = true;
+}
+
+void VSNode::setAudioInfo() {
+    hasAu = true;
 }
 
 PVideoFrame VSNode::getFrameInternal(int n, int activationReason, VSFrameContext &frameCtx) {
@@ -1459,9 +1469,9 @@ void VSCore::loadPlugin(const std::string &filename, const std::string &forcedNa
         p->enableCompat();
 }
 
-void VSCore::createFilter(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor) {
+void VSCore::createFilter(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterGetAudio getAudio, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor) {
     try {
-        PVideoNode node(std::make_shared<VSNode>(in, out, name, init, getFrame, free, filterMode, flags, instanceData, apiMajor, this));
+        PVideoNode node(std::make_shared<VSNode>(in, out, name, init, getFrame, free, getAudio, filterMode, flags, instanceData, apiMajor, this));
         for (size_t i = 0; i < node->getNumOutputs(); i++) {
             // fixme, not that elegant but saves more variant poking code
             VSNodeRef *ref = new VSNodeRef(node, static_cast<int>(i));

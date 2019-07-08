@@ -478,6 +478,7 @@ private:
     std::string name;
     VSFilterInit init;
     VSFilterGetFrame filterGetFrame;
+    VSFilterGetAudio filterGetAudio;
     VSFilterFree free;
     VSFilterMode filterMode;
 
@@ -485,6 +486,7 @@ private:
     VSCore *core;
     int flags;
     bool hasVi;
+    bool hasAu;
     std::vector<VSVideoInfo> vi;
 
     // for keeping track of when a filter is busy in the exclusive section and with which frame
@@ -499,7 +501,7 @@ private:
 
     PVideoFrame getFrameInternal(int n, int activationReason, VSFrameContext &frameCtx);
 public:
-    VSNode(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor, VSCore *core);
+    VSNode(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterGetAudio getAudio, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor, VSCore *core);
 
     ~VSNode();
 
@@ -508,10 +510,12 @@ public:
     }
 
     void getFrame(const PFrameContext &ct);
+    void getAudio();
 
     const VSVideoInfo &getVideoInfo(int index);
 
     void setVideoInfo(const VSVideoInfo *vi, int numOutputs);
+    void setAudioInfo();
 
     size_t getNumOutputs() const {
         return vi.size();
@@ -662,7 +666,7 @@ public:
     bool isValidFormatPointer(const VSFormat *f);
 
     void loadPlugin(const std::string &filename, const std::string &forcedNamespace = std::string(), const std::string &forcedId = std::string(), bool altSearchPath = false);
-    void createFilter(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor);
+    void createFilter(const VSMap *in, VSMap *out, const std::string &name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterGetAudio getAudio, VSFilterMode filterMode, int flags, void *instanceData, int apiMajor);
 
     VSMap getPlugins();
     VSPlugin *getPluginById(const std::string &identifier);

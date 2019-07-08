@@ -120,6 +120,18 @@ static const VSFrameRef *VS_CC getFrame(int n, VSNodeRef *clip, char *errorMsg, 
     return g.r;
 }
 
+static const void VS_CC getAudio(VSNodeRef *clip) VS_NOEXCEPT {
+    assert(clip);
+
+    VSNode *node = clip->clip.get();
+    bool isWorker = node->isWorkerThread();
+    if (isWorker)
+        node->releaseThread();
+    node->getAudio();
+    if (isWorker)
+        node->reserveThread();
+}
+
 static void VS_CC requestFrameFilter(int n, VSNodeRef *clip, VSFrameContext *frameCtx) VS_NOEXCEPT {
     assert(clip && frameCtx);
     int numFrames = clip->clip->getVideoInfo(clip->index).numFrames;
@@ -171,11 +183,11 @@ static void VS_CC copyFrameProps(const VSFrameRef *src, VSFrameRef *dst, VSCore 
     core->copyFrameProps(src->frame, dst->frame);
 }
 
-static void VS_CC createFilter(const VSMap *in, VSMap *out, const char *name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, int filterMode, int flags, void *instanceData, VSCore *core) VS_NOEXCEPT {
+static void VS_CC createFilter(const VSMap *in, VSMap *out, const char *name, VSFilterInit init, VSFilterGetFrame getFrame, VSFilterFree free, VSFilterGetAudio getAudio, int filterMode, int flags, void *instanceData, VSCore *core) VS_NOEXCEPT {
     assert(in && out && name && init && getFrame && core);
     if (!name)
         vsFatal("NULL name pointer passed to createFilter()");
-    core->createFilter(in, out, name, init, getFrame, free, static_cast<VSFilterMode>(filterMode), flags, instanceData, VAPOURSYNTH_API_MAJOR);
+    core->createFilter(in, out, name, init, getFrame, free, getAudio, static_cast<VSFilterMode>(filterMode), flags, instanceData, VAPOURSYNTH_API_MAJOR);
 }
 
 static void VS_CC setError(VSMap *map, const char *errorMessage) VS_NOEXCEPT {
@@ -205,6 +217,11 @@ static const VSVideoInfo *VS_CC getVideoInfo(VSNodeRef *c) VS_NOEXCEPT {
 static void VS_CC setVideoInfo(const VSVideoInfo *vi, int numOutputs, VSNode *c) VS_NOEXCEPT {
     assert(vi && numOutputs > 0 && c);
     c->setVideoInfo(vi, numOutputs);
+}
+
+static void VS_CC setAudioInfo(VSNode *c) VS_NOEXCEPT {
+    assert(c);
+    c->setAudioInfo();
 }
 
 static const VSFormat *VS_CC getFrameFormat(const VSFrameRef *f) VS_NOEXCEPT {
@@ -572,6 +589,7 @@ const VSAPI vs_internal_vsapi = {
     &getFrame,
     &getFrameAsync,
     &getFrameFilter,
+    &getAudio,
     &requestFrameFilter,
     &queryCompletedFrame,
     &releaseFrameEarly,
@@ -589,6 +607,7 @@ const VSAPI vs_internal_vsapi = {
 
     &getVideoInfo,
     &setVideoInfo,
+    &setAudioInfo,
     &getFrameFormat,
     &getFrameWidth,
     &getFrameHeight,

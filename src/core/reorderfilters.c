@@ -163,7 +163,7 @@ static void VS_CC trimCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Trim", trimInit, trimGetframe, singleClipFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "Trim", trimInit, trimGetframe, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -286,7 +286,7 @@ static void VS_CC interleaveCreate(const VSMap *in, VSMap *out, void *userData, 
         data = malloc(sizeof(d));
         *data = d;
 
-        vsapi->createFilter(in, out, "Interleave", interleaveInit, interleaveGetframe, interleaveFree, fmParallel, nfNoCache, data, core);
+        vsapi->createFilter(in, out, "Interleave", interleaveInit, interleaveGetframe, interleaveFree, NULL, fmParallel, nfNoCache, data, core);
     }
 }
 
@@ -315,7 +315,7 @@ static void VS_CC reverseCreate(const VSMap *in, VSMap *out, void *userData, VSC
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Reverse", singleClipInit, reverseGetframe, singleClipFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "Reverse", singleClipInit, reverseGetframe, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -377,7 +377,7 @@ static void VS_CC loopCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "Loop", loopInit, loopGetframe, singleClipFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "Loop", loopInit, loopGetframe, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -472,7 +472,7 @@ static void VS_CC selectEveryCreate(const VSMap *in, VSMap *out, void *userData,
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "SelectEvery", selectEveryInit, selectEveryGetframe, selectEveryFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "SelectEvery", selectEveryInit, selectEveryGetframe, selectEveryFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -600,7 +600,7 @@ static void VS_CC spliceCreate(const VSMap *in, VSMap *out, void *userData, VSCo
         data = malloc(sizeof(d));
         *data = d;
 
-        vsapi->createFilter(in, out, "Splice", spliceInit, spliceGetframe, spliceFree, fmParallel, nfNoCache, data, core);
+        vsapi->createFilter(in, out, "Splice", spliceInit, spliceGetframe, spliceFree, NULL, fmParallel, nfNoCache, data, core);
     }
 }
 
@@ -681,7 +681,7 @@ static void VS_CC duplicateFramesCreate(const VSMap *in, VSMap *out, void *userD
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "DuplicateFrames", duplicateFramesInit, duplicateFramesGetFrame, duplicateFramesFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "DuplicateFrames", duplicateFramesInit, duplicateFramesGetFrame, duplicateFramesFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -771,7 +771,7 @@ static void VS_CC deleteFramesCreate(const VSMap *in, VSMap *out, void *userData
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "DeleteFrames", deleteFramesInit, deleteFramesGetFrame, deleteFramesFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "DeleteFrames", deleteFramesInit, deleteFramesGetFrame, deleteFramesFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
@@ -879,7 +879,7 @@ static void VS_CC freezeFramesCreate(const VSMap *in, VSMap *out, void *userData
     data = malloc(sizeof(d));
     *data = d;
 
-    vsapi->createFilter(in, out, "FreezeFrames", freezeFramesInit, freezeFramesGetFrame, freezeFramesFree, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "FreezeFrames", freezeFramesInit, freezeFramesGetFrame, freezeFramesFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
 //////////////////////////////////////////
