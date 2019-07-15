@@ -510,7 +510,7 @@ public:
     }
 
     void getFrame(const PFrameContext &ct);
-    void getAudio();
+    void getAudio(void *lpBuffer, long lStart, long lSamples);
 
     const VSVideoInfo &getVideoInfo(int index);
 

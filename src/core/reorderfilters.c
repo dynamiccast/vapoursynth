@@ -495,6 +495,13 @@ typedef struct {
     int idx;
 } SpliceCtx;
 
+static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
+    SpliceData *d = (SpliceData *)instanceData;
+    const VSNodeRef *node = d->node[0];
+
+    vsapi->getAudio(node, lpBuffer, lStart, lSamples);
+}
+
 static const VSFrameRef *VS_CC spliceGetframe(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
     SpliceData *d = (SpliceData *) * instanceData;
 
@@ -600,7 +607,7 @@ static void VS_CC spliceCreate(const VSMap *in, VSMap *out, void *userData, VSCo
         data = malloc(sizeof(d));
         *data = d;
 
-        vsapi->createFilter(in, out, "Splice", spliceInit, spliceGetframe, spliceFree, NULL, fmParallel, nfNoCache, data, core);
+        vsapi->createFilter(in, out, "Splice", spliceInit, spliceGetframe, spliceFree, spliceGetAudio, fmParallel, nfNoCache, data, core);
     }
 }
 

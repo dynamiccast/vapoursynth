@@ -120,14 +120,14 @@ static const VSFrameRef *VS_CC getFrame(int n, VSNodeRef *clip, char *errorMsg, 
     return g.r;
 }
 
-static const void VS_CC getAudio(VSNodeRef *clip) VS_NOEXCEPT {
+static const void VS_CC getAudio(VSNodeRef *clip, void *lpBuffer, long lStart, long lSamples) VS_NOEXCEPT {
     assert(clip);
 
     VSNode *node = clip->clip.get();
     bool isWorker = node->isWorkerThread();
     if (isWorker)
         node->releaseThread();
-    node->getAudio();
+    node->getAudio(lpBuffer, lStart, lSamples);
     if (isWorker)
         node->reserveThread();
 }

@@ -2744,99 +2744,6 @@ static void VS_CC setFieldBasedCreate(const VSMap *in, VSMap *out, void *userDat
     vsapi->createFilter(in, out, "SetFieldBased", singleClipInit, setFieldBasedGetFrame, singleClipFree, NULL, fmParallel, nfNoCache, data, core);
 }
 
-typedef struct {
-    VSNodeRef *node;
-    const VSVideoInfo *vi;
-} ToneData;
-
-static const VSFrameRef *VS_CC ToneGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
-    BlankClipData *d = (BlankClipData *)* instanceData;
-
-    if (activationReason == arInitial) {
-        VSFrameRef *frame = NULL;
-        if (!d->f) {
-            frame = vsapi->newVideoFrame(d->vi.format, d->vi.width, d->vi.height, 0, core);
-            int bytesPerSample = (d->vi.format->id == pfCompatYUY2) ? 4 : d->vi.format->bytesPerSample;
-
-            for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
-                switch (bytesPerSample) {
-                case 1:
-                    vs_memset8(vsapi->getWritePtr(frame, plane), d->color[plane], vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane));
-                    break;
-                case 2:
-                    vs_memset16(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 2);
-                    break;
-                case 4:
-                    vs_memset32(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 4);
-                    break;
-                }
-            }
-
-            if (d->vi.fpsNum > 0) {
-                VSMap *frameProps = vsapi->getFramePropsRW(frame);
-                vsapi->propSetInt(frameProps, "_DurationNum", d->vi.fpsDen, paReplace);
-                vsapi->propSetInt(frameProps, "_DurationDen", d->vi.fpsNum, paReplace);
-            }
-        }
-
-        if (d->keep) {
-            if (frame)
-                d->f = frame;
-            return vsapi->cloneFrameRef(d->f);
-        }
-        else {
-            return frame;
-        }
-    }
-
-    return 0;
-}
-
-static void VS_CC ToneGetAudio(VSCore *core, const VSAPI *vsapi) {
-
-}
-
-static void VS_CC ToneInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
-    BlankClipData *d = (BlankClipData *)* instanceData;
-    vsapi->setVideoInfo(&d->vi, 1, node);
-    vsapi->setAudioInfo(node);
-}
-
-static void VS_CC ToneFree(void *instanceData, VSCore *core, const VSAPI *vsapi) {
-}
-
-static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
-    BlankClipData d = { 0 };
-    BlankClipData *data;
-    int hasvi = 0;
-    int err;
-
-    VSNodeRef *node = vsapi->propGetNode(in, "clip", 0, &err);
-
-    if (!err) {
-        d.vi = *vsapi->getVideoInfo(node);
-        vsapi->freeNode(node);
-        hasvi = 1;
-    }
-
-    d.vi.width = 640;
-    d.vi.height = 480;
-    d.vi.fpsNum = 24;
-    d.vi.fpsDen = 1;
-
-    d.vi.format = vsapi->getFormatPreset(pfRGB24, core);
-    d.vi.numFrames = int64ToIntS((d.vi.fpsNum * 10) / d.vi.fpsDen);
-
-    setBlack(d.color, d.vi.format);
-
-    d.color[0] = 255;
-
-    data = malloc(sizeof(d));
-    *data = d;
-
-    vsapi->createFilter(in, out, "Tone", ToneInit, ToneGetFrame, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
-}
-
 //////////////////////////////////////////
 // Init
 
@@ -2865,5 +2772,4 @@ void VS_CC stdlibInitialize(VSConfigPlugin configFunc, VSRegisterFunction regist
     registerFunc("PropToClip", "clip:clip;prop:data:opt;", propToClipCreate, 0, plugin);
     registerFunc("SetFrameProp", "clip:clip;prop:data;delete:int:opt;intval:int[]:opt;floatval:float[]:opt;data:data[]:opt;", setFramePropCreate, 0, plugin);
     registerFunc("SetFieldBased", "clip:clip;value:int;", setFieldBasedCreate, 0, plugin);
-    registerFunc("Tone", "length:int;", ToneCreate, 0, plugin);
 }

@@ -846,122 +846,17 @@ bool VapourSynthStream::ReadFrame(void* lpBuffer, int n) {
     return !errSe;
 }
 
-#define PI 3.1415926535897932384626433832795
-/**********************************************************
- *                         TONE                           *
- **********************************************************/
-class SampleGenerator {
-public:
-    SampleGenerator() {}
-    virtual float getValueAt(double where) { return 0.0f; }
-};
-
-class SineGenerator : public SampleGenerator {
-public:
-    SineGenerator() {}
-    float getValueAt(double where) { return (float)sin(PI * where * 2.0); }
-};
-
-
-class NoiseGenerator : public SampleGenerator {
-public:
-    NoiseGenerator() {
-        srand((unsigned)time(NULL));
-    }
-
-    float getValueAt(double where) { return (float)rand()*(2.0f / RAND_MAX) - 1.0f; }
-};
-
-class SquareGenerator : public SampleGenerator {
-public:
-    SquareGenerator() {}
-
-    float getValueAt(double where) {
-        if (where <= 0.5) {
-            return 1.0f;
-        }
-        else {
-            return -1.0f;
-        }
-    }
-};
-
-class TriangleGenerator : public SampleGenerator {
-public:
-    TriangleGenerator() {}
-
-    float getValueAt(double where) {
-        if (where <= 0.25) {
-            return (float)(where*4.0);
-        }
-        else if (where <= 0.75) {
-            return (float)((-4.0*(where - 0.50)));
-        }
-        else {
-            return (float)((4.0*(where - 1.00)));
-        }
-    }
-};
-
-class SawtoothGenerator : public SampleGenerator {
-public:
-    SawtoothGenerator() {}
-
-    float getValueAt(double where) {
-        return (float)(2.0*(where - 0.5));
-    }
-};
-
-
-class Tone {
-    SampleGenerator *s;
-    const double freq;            // Frequency in Hz
-    const double samplerate;      // Samples per second
-    const int ch;                 // Number of channels
-    const double add_per_sample;  // How much should we add per sample in seconds
-    const float level;
-
-public:
-
-    Tone(double _length, double _freq, int _samplerate, int _ch, float _level) :
-        freq(_freq), samplerate(_samplerate), ch(_ch), add_per_sample(_freq / _samplerate), level(_level) {
-
-        s = new SineGenerator();
-    }
-
-    void __stdcall GetAudio(void* buf, __int64 start, __int64 count) {
-
-        // Where in the cycle are we in?
-        const double cycle = (freq * start) / samplerate;
-        double period_place = cycle - floor(cycle);
-
-        float *samples = (float*)buf;
-
-        for (int i = 0; i < count; i++) {
-            float v = s->getValueAt(period_place) * level;
-            for (int o = 0; o < ch; o++) {
-                samples[o + i * ch] = v;
-            }
-            period_place += add_per_sample;
-            if (period_place >= 1.0)
-                period_place -= floor(period_place);
-        }
-    }
-};
-
 ////////////////////////////////////////////////////////////////////////
 //////////// IAVIStream
 
 STDMETHODIMP VapourSynthStream::Read(LONG lStart, LONG lSamples, LPVOID lpBuffer, LONG cbBuffer, LONG *plBytes, LONG *plSamples) {
     HRESULT result;
 
-    Tone t(5.0, 400.0, 44100, 1, 1);
     parent->Lock();
     if (this->m_isAudio) {
         const VSAPI *vsapi = parent->vsapi;
 
-        vsapi->getAudio(parent->node);
-        t.GetAudio(lpBuffer, lStart, lSamples);
+        vsapi->getAudio(parent->node, lpBuffer, lStart, lSamples);
         *plSamples = lSamples;
         *plBytes = cbBuffer;
 
@@ -1020,7 +915,7 @@ STDMETHODIMP VapourSynthStream::ReadFormat(LONG lPos, LPVOID lpFormat, LONG *lpc
     const VSVideoInfo* const vi = parent->vi;
 
     if (this->m_isAudio) {
-        PCMWAVEFORMAT pcm = {};
+       PCMWAVEFORMAT pcm = {};
 
        pcm.wBitsPerSample = 16;
        pcm.wf.wFormatTag = WAVE_FORMAT_PCM;

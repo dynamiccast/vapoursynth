@@ -1,0 +1,257 @@
+/*
+* Copyright (c) 2012-2016 Fredrik Mellbin
+*
+* This file is part of VapourSynth.
+*
+* VapourSynth is free software; you can redistribute it and/or
+* modify it under the terms of the GNU Lesser General Public
+* License as published by the Free Software Foundation; either
+* version 2.1 of the License, or (at your option) any later version.
+*
+* VapourSynth is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with VapourSynth; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
+
+#include "VSHelper.h"
+#include "internalfilters.h"
+#include "filtershared.h"
+#include "time.h"
+
+//////////////////////////////////////////
+// Tone
+
+#define PI 3.1415926535897932384626433832795
+/**********************************************************
+ *                         TONE                           *
+ **********************************************************/
+class SampleGenerator {
+public:
+    SampleGenerator() {}
+    virtual float getValueAt(double where) { return 0.0f; }
+};
+
+class SineGenerator : public SampleGenerator {
+public:
+    SineGenerator() {}
+    float getValueAt(double where) { return (float)sin(PI * where * 2.0); }
+};
+
+
+class NoiseGenerator : public SampleGenerator {
+public:
+    NoiseGenerator() {
+        srand((unsigned)time(NULL));
+    }
+
+    float getValueAt(double where) { return (float)rand()*(2.0f / RAND_MAX) - 1.0f; }
+};
+
+class SquareGenerator : public SampleGenerator {
+public:
+    SquareGenerator() {}
+
+    float getValueAt(double where) {
+        if (where <= 0.5) {
+            return 1.0f;
+        }
+        else {
+            return -1.0f;
+        }
+    }
+};
+
+class TriangleGenerator : public SampleGenerator {
+public:
+    TriangleGenerator() {}
+
+    float getValueAt(double where) {
+        if (where <= 0.25) {
+            return (float)(where*4.0);
+        }
+        else if (where <= 0.75) {
+            return (float)((-4.0*(where - 0.50)));
+        }
+        else {
+            return (float)((4.0*(where - 1.00)));
+        }
+    }
+};
+
+class SawtoothGenerator : public SampleGenerator {
+public:
+    SawtoothGenerator() {}
+
+    float getValueAt(double where) {
+        return (float)(2.0*(where - 0.5));
+    }
+};
+
+
+class Tone {
+    SampleGenerator *s;
+    const float freq;            // Frequency in Hz
+    const float samplerate;      // Samples per second
+    const int ch;                 // Number of channels
+    const double add_per_sample;  // How much should we add per sample in seconds
+    const float level;
+
+public:
+
+    Tone(float _length, float _freq, int _samplerate, int _ch, float _level) :
+        freq(_freq), samplerate(_samplerate), ch(_ch), add_per_sample(_freq / _samplerate), level(_level) {
+
+        s = new SineGenerator();
+    }
+
+    void __stdcall GetAudio(void* buf, __int64 start, __int64 count) {
+
+        // Where in the cycle are we in?
+        const double cycle = (freq * start) / samplerate;
+        double period_place = cycle - floor(cycle);
+
+        float* samples = (float* )buf;
+
+        for (int i = 0; i < count; i++) {
+            float v = s->getValueAt(period_place) * level;
+            for (int o = 0; o < ch; o++) {
+                samples[o + i * (ch - 1)] = v;
+            }
+            period_place += add_per_sample;
+            if (period_place >= 1.0)
+                period_place -= floor(period_place);
+        }
+    }
+};
+
+typedef struct {
+    VSFrameRef *f;
+    VSVideoInfo vi;
+    uint32_t color[3];
+    Tone *tone;
+} BlankClipData;
+
+static const VSFrameRef *VS_CC ToneGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+
+    if (activationReason == arInitial) {
+        VSFrameRef *frame = NULL;
+        if (!d->f) {
+            frame = vsapi->newVideoFrame(d->vi.format, d->vi.width, d->vi.height, 0, core);
+            int bytesPerSample = (d->vi.format->id == pfCompatYUY2) ? 4 : d->vi.format->bytesPerSample;
+
+            for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
+                switch (bytesPerSample) {
+                case 1:
+                    vs_memset8(vsapi->getWritePtr(frame, plane), d->color[plane], vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane));
+                    break;
+                case 2:
+                    vs_memset16(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 2);
+                    break;
+                case 4:
+                    vs_memset32(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 4);
+                    break;
+                }
+            }
+
+            if (d->vi.fpsNum > 0) {
+                VSMap *frameProps = vsapi->getFramePropsRW(frame);
+                vsapi->propSetInt(frameProps, "_DurationNum", d->vi.fpsDen, paReplace);
+                vsapi->propSetInt(frameProps, "_DurationDen", d->vi.fpsNum, paReplace);
+            }
+        }
+
+        return frame;
+    }
+
+    return 0;
+}
+
+static void VS_CC ToneGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
+    BlankClipData *d = (BlankClipData *)instanceData;
+
+    d->tone->GetAudio(lpBuffer, lStart, lSamples);
+}
+
+static void VS_CC ToneInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+    vsapi->setVideoInfo(&d->vi, 1, node);
+    vsapi->setAudioInfo(node);
+}
+
+static void VS_CC ToneFree(void *instanceData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)instanceData;
+
+    delete d->tone;
+}
+
+static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *data = (BlankClipData*)malloc(sizeof(BlankClipData));
+    int hasvi = 0;
+    int err;
+    float length = 10.0;
+    float frequency = 440;
+    int samplerate = 44100L;
+    int64_t channels = 2;
+    const char *type = 0;
+    float level = 1.0;
+
+    VSNodeRef *node = vsapi->propGetNode(in, "clip", 0, &err);
+    data = (BlankClipData*)malloc(sizeof(BlankClipData));
+
+    if (!err) {
+        data->vi = *vsapi->getVideoInfo(node);
+        vsapi->freeNode(node);
+        hasvi = 1;
+    }
+
+    data->f = NULL;
+    data->vi.width = 640;
+    data->vi.height = 480;
+    data->vi.fpsNum = 24;
+    data->vi.fpsDen = 1;
+
+    data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
+    data->vi.numFrames = int64ToIntS((data->vi.fpsNum * 1) / data->vi.fpsDen);
+
+    data->color[0] = 255;
+
+    length = vsapi->propGetFloat(in, "length", 0, &err);
+    if (err) {
+        length = 10.0;
+    }
+
+    frequency = vsapi->propGetFloat(in, "frequency", 0, &err);
+    if (err) {
+        frequency = 48000;
+    }
+
+    channels = vsapi->propGetInt(in, "channels", 0, &err);
+    if (err) {
+        channels = 2;
+    }
+
+    type = vsapi->propGetData(in, "type", 0, &err);
+    if (err) {
+        type = NULL;
+    }
+
+    level = vsapi->propGetFloat(in, "level", 0, &err);
+    if (err) {
+        level = 1.0;
+    }
+
+    Tone *tone = new Tone(length, frequency, samplerate, channels, level);
+    data->tone = tone;
+
+    vsapi->createFilter(in, out, "Tone", ToneInit, ToneGetFrame, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
+}
+
+void VS_CC audioInitialize(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
+    registerFunc("Tone", "length:float:opt;frequency:float:opt;samplerate:int:opt;channels:int:opt;type:data:opt;level:float:opt", ToneCreate, 0, plugin);
+}

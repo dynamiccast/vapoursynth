@@ -821,8 +821,8 @@ void VSNode::getFrame(const PFrameContext &ct) {
     core->threadPool->start(ct);
 }
 
-void VSNode::getAudio() {
-    filterGetAudio(core, &vs_internal_vsapi);
+void VSNode::getAudio(void *lpBuffer, long lStart, long lSamples) {
+    filterGetAudio(core, &vs_internal_vsapi, instanceData, lpBuffer, lStart, lSamples);
 }
 
 const VSVideoInfo &VSNode::getVideoInfo(int index) {
@@ -1267,6 +1267,7 @@ VSCore::VSCore(int threads) : coreFreed(false), numFilterInstances(1), numFuncti
     mergeInitialize(::vs_internal_configPlugin, ::vs_internal_registerFunction, p);
     reorderInitialize(::vs_internal_configPlugin, ::vs_internal_registerFunction, p);
     stdlibInitialize(::vs_internal_configPlugin, ::vs_internal_registerFunction, p);
+    audioInitialize(::vs_internal_configPlugin, ::vs_internal_registerFunction, p);
     p->enableCompat();
     p->lock();
 
