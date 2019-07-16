@@ -92,6 +92,20 @@ public:
     }
 };
 
+__inline short Saturate_int16(float n) {
+    if (n <= -32768.0f) return -32768;
+    if (n >= 32767.0f) return  32767;
+    return (short)(n + 0.5f);
+}
+
+void convertFromFloat(float* inbuf, void* outbuf, char sample_type, int count) {
+    int i;
+
+    signed short* samples = (signed short*)outbuf;
+    for (i = 0; i < count; i++) {
+        samples[i] = Saturate_int16(inbuf[i] * 32768.0f);
+    }
+}
 
 class Tone {
     SampleGenerator *s;
@@ -115,12 +129,12 @@ public:
         const double cycle = (freq * start) / samplerate;
         double period_place = cycle - floor(cycle);
 
-        float* samples = (float* )buf;
+        short* samples = (short* )buf;
 
         for (int i = 0; i < count; i++) {
             float v = s->getValueAt(period_place) * level;
             for (int o = 0; o < ch; o++) {
-                samples[o + i * (ch - 1)] = v;
+                samples[o + i * ch] = Saturate_int16(v * 32768.0f);
             }
             period_place += add_per_sample;
             if (period_place >= 1.0)
