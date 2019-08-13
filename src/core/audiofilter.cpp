@@ -148,6 +148,10 @@ typedef struct {
     VSVideoInfo vi;
     uint32_t color[3];
     Tone *tone;
+    VSNodeRef *clip1;
+    VSNodeRef *clip2;
+    size_t tempbuffer_size;
+    signed char *tempbuffer;
 } BlankClipData;
 
 static const VSFrameRef *VS_CC ToneGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
@@ -210,7 +214,7 @@ static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     int err;
     float length = 10.0;
     float frequency = 440;
-    int samplerate = 44100L;
+    int samplerate = 48000L;
     int64_t channels = 2;
     const char *type = 0;
     float level = 1.0;
@@ -266,6 +270,128 @@ static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     vsapi->createFilter(in, out, "Tone", ToneInit, ToneGetFrame, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
 }
 
+static const VSFrameRef *VS_CC MixAudioGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+
+    if (activationReason == arInitial) {
+        VSFrameRef *frame = NULL;
+        if (!d->f) {
+            frame = vsapi->newVideoFrame(d->vi.format, d->vi.width, d->vi.height, 0, core);
+            int bytesPerSample = (d->vi.format->id == pfCompatYUY2) ? 4 : d->vi.format->bytesPerSample;
+
+            for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
+                switch (bytesPerSample) {
+                case 1:
+                    vs_memset8(vsapi->getWritePtr(frame, plane), d->color[plane], vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane));
+                    break;
+                case 2:
+                    vs_memset16(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 2);
+                    break;
+                case 4:
+                    vs_memset32(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 4);
+                    break;
+                }
+            }
+
+            if (d->vi.fpsNum > 0) {
+                VSMap *frameProps = vsapi->getFramePropsRW(frame);
+                vsapi->propSetInt(frameProps, "_DurationNum", d->vi.fpsDen, paReplace);
+                vsapi->propSetInt(frameProps, "_DurationDen", d->vi.fpsNum, paReplace);
+            }
+        }
+
+        return frame;
+    }
+
+    return 0;
+}
+
+long clamp(long n, long min, long max)
+{
+    n = n > max ? max : n;
+    return n < min ? min : n;
+}
+
+static __int64 signed_saturated_add64(__int64 x, __int64 y) {
+    // determine the lower or upper bound of the result
+    __int64 ret = (x < 0) ? INT64_MIN : INT64_MAX;
+    // this is always well defined:
+    // if x < 0 this adds a positive value to INT64_MIN
+    // if x > 0 this subtracts a positive value from INT64_MAX
+    __int64 comp = ret - x;
+    // the codition is equivalent to
+    // ((x < 0) && (y > comp)) || ((x >=0) && (y <= comp))
+    if ((x < 0) == (y > comp)) ret = x + y;
+    return ret;
+}
+
+static void VS_CC MixAudioGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
+    BlankClipData *d = (BlankClipData *)instanceData;
+
+    if (d->tempbuffer_size < lSamples)
+    {
+        if (d->tempbuffer_size)
+            delete[] d->tempbuffer;
+
+        d->tempbuffer = new signed char[(size_t)(lSamples * 4)];
+        d->tempbuffer_size = (int)lSamples;
+    }
+    vsapi->getAudio(d->clip1, lpBuffer, lStart, lSamples);
+    vsapi->getAudio(d->clip2, (void*)d->tempbuffer, lStart, lSamples);
+
+    short* samples = (short*)lpBuffer;
+    short* clip_samples = (short*)d->tempbuffer;
+    for (unsigned i = 0; i < unsigned(lSamples)*2; ++i) {
+        samples[i] = (samples[i] / 2) + (clip_samples[i] / 2);
+    }
+}
+
+static void VS_CC MixAudioInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+    vsapi->setVideoInfo(&d->vi, 1, node);
+    vsapi->setAudioInfo(node);
+}
+
+static void VS_CC MixAudioFree(void *instanceData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)instanceData;
+
+    //delete d->tone;
+}
+
+static void VS_CC MixAudioCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *data = (BlankClipData*)malloc(sizeof(BlankClipData));
+    int err;
+
+    VSNodeRef *node = vsapi->propGetNode(in, "clip", 0, &err);
+    data = (BlankClipData*)malloc(sizeof(BlankClipData));
+
+    if (!err) {
+        data->vi = *vsapi->getVideoInfo(node);
+        vsapi->freeNode(node);
+    }
+
+    VSNodeRef *clip1 = vsapi->propGetNode(in, "clip1", 0, &err);
+    VSNodeRef *clip2 = vsapi->propGetNode(in, "clip2", 0, &err);
+
+    data->f = NULL;
+    data->vi.width = 640;
+    data->vi.height = 480;
+    data->vi.fpsNum = 24;
+    data->vi.fpsDen = 1;
+    data->clip1 = clip1;
+    data->clip2 = clip2;
+    data->tempbuffer = NULL;
+    data->tempbuffer_size = 0;
+
+    data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
+    data->vi.numFrames = int64ToIntS((data->vi.fpsNum * 1) / data->vi.fpsDen);
+
+    data->color[0] = 255;
+
+    vsapi->createFilter(in, out, "MixAudio", MixAudioInit, MixAudioGetFrame, MixAudioFree, MixAudioGetAudio, fmParallel, nfNoCache, data, core);
+}
+
 void VS_CC audioInitialize(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
     registerFunc("Tone", "length:float:opt;frequency:float:opt;samplerate:int:opt;channels:int:opt;type:data:opt;level:float:opt", ToneCreate, 0, plugin);
+    registerFunc("MixAudio", "clip1:clip;clip2:clip;clip1_factor:float:opt;clip2_factor:float:opt", MixAudioCreate, 0, plugin);
 }

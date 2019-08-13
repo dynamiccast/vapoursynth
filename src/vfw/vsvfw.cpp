@@ -694,7 +694,7 @@ STDMETHODIMP_(LONG) VapourSynthStream::Info(AVISTREAMINFOW *psi, LONG lSize) {
         asi.dwScale = 4;
         asi.dwRate = 192000;
         asi.dwSampleSize = 4;
-        asi.dwLength = 193920;
+        asi.dwLength = 192000;
         asi.dwQuality = 0;
     }
 
@@ -920,8 +920,8 @@ STDMETHODIMP VapourSynthStream::ReadFormat(LONG lPos, LPVOID lpFormat, LONG *lpc
        pcm.wBitsPerSample = 16;
        pcm.wf.wFormatTag = WAVE_FORMAT_PCM;
        pcm.wf.nChannels = 2;
-       pcm.wf.nSamplesPerSec = 44100L;
-       pcm.wf.nAvgBytesPerSec = 176400L;
+       pcm.wf.nSamplesPerSec = 48000L;
+       pcm.wf.nAvgBytesPerSec = 192000L;
        pcm.wf.nBlockAlign = 4;
        memcpy(lpFormat, &pcm, static_cast<size_t>(*lpcbFormat));
     }

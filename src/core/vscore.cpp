@@ -853,6 +853,7 @@ void VSNode::setVideoInfo(const VSVideoInfo *vi, int numOutputs) {
 
 void VSNode::setAudioInfo() {
     hasAu = true;
+    this->vi[0].audio_samples_per_second = 48000;
 }
 
 PVideoFrame VSNode::getFrameInternal(int n, int activationReason, VSFrameContext &frameCtx) {

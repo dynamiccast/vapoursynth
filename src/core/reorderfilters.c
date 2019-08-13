@@ -497,9 +497,23 @@ typedef struct {
 
 static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
     SpliceData *d = (SpliceData *)instanceData;
-    const VSNodeRef *node = d->node[0];
+    unsigned int i = 0;
+    long readSamples = 0;
 
-    vsapi->getAudio(node, lpBuffer, lStart, lSamples);
+    while (readSamples != lSamples) {
+        VSNodeRef *node = d->node[i];
+        VSVideoInfo *videoInfo = vsapi->getVideoInfo(node);
+        int samples = ((__int64)(videoInfo->numFrames) * videoInfo->audio_samples_per_second * videoInfo->fpsDen / videoInfo->fpsNum);
+
+        if ((readSamples + samples) > lSamples) {
+            samples = lSamples - readSamples;
+        }
+
+        vsapi->getAudio(node, (char*)lpBuffer + (readSamples * 4), lStart, samples);
+        readSamples += samples;
+        i++;
+    }
+
 }
 
 static const VSFrameRef *VS_CC spliceGetframe(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
