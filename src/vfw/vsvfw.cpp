@@ -694,7 +694,7 @@ STDMETHODIMP_(LONG) VapourSynthStream::Info(AVISTREAMINFOW *psi, LONG lSize) {
         asi.dwScale = 4;
         asi.dwRate = 192000;
         asi.dwSampleSize = 4;
-        asi.dwLength = 192000;
+        asi.dwLength = vi->numFrames * 48000 / 24;
         asi.dwQuality = 0;
     }
 
@@ -855,12 +855,25 @@ STDMETHODIMP VapourSynthStream::Read(LONG lStart, LONG lSamples, LPVOID lpBuffer
     parent->Lock();
     if (this->m_isAudio) {
         const VSAPI *vsapi = parent->vsapi;
+        const VSVideoInfo *videoInfo = vsapi->getVideoInfo(parent->node);
 
-        vsapi->getAudio(parent->node, lpBuffer, lStart, lSamples);
-        *plSamples = lSamples;
-        *plBytes = cbBuffer;
+        if (!lpBuffer)
+            result = S_OK;
+        else {
+            if (lSamples == AVISTREAMREAD_CONVENIENT)
+                lSamples = videoInfo->audio_samples_per_second;
 
-        result = S_OK; // vsapi->getAudio(lpBuffer, lStart, lSamples, parent->node);
+            int bytes = lSamples * 4;
+            if (lpBuffer && bytes > cbBuffer) {
+                lSamples = cbBuffer / 4;
+                bytes = lSamples * 4;
+            }
+            *plSamples = lSamples;
+            *plBytes = bytes;
+            vsapi->getAudio(parent->node, lpBuffer, lStart, lSamples);
+
+            result = S_OK;
+        }
     }
     else {
         result = Read2(lStart, lSamples, lpBuffer, cbBuffer, plBytes, plSamples);

@@ -500,10 +500,18 @@ static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanc
     unsigned int i = 0;
     long readSamples = 0;
 
-    while (readSamples != lSamples) {
+    while (readSamples != lSamples && i < d->numclips) {
         VSNodeRef *node = d->node[i];
         VSVideoInfo *videoInfo = vsapi->getVideoInfo(node);
-        int samples = ((__int64)(videoInfo->numFrames) * videoInfo->audio_samples_per_second * videoInfo->fpsDen / videoInfo->fpsNum);
+        int samples = ((__int64)(videoInfo->numFrames) * videoInfo->audio_samples_per_second * 1 /*videoInfo->fpsDen*/ / /*videoInfo->fpsNum*/ 24);
+
+        if (samples <= lStart) {
+            lStart = lStart - samples;
+            i++;
+            continue;
+        }
+
+        samples = samples - lStart;
 
         if ((readSamples + samples) > lSamples) {
             samples = lSamples - readSamples;
@@ -511,6 +519,7 @@ static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanc
 
         vsapi->getAudio(node, (char*)lpBuffer + (readSamples * 4), lStart, samples);
         readSamples += samples;
+        lStart = 0;
         i++;
     }
 
