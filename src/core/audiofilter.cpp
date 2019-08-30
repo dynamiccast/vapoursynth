@@ -143,7 +143,7 @@ public:
         short* samples = (short* )buf;
 
         for (int i = 0; i < count; i++) {
-            float v = s->getValueAt(period_place) * 0.5; // level;
+            float v = s->getValueAt(period_place) * level;
             for (int o = 0; o < ch; o++) {
                 samples[o + i * ch] = Saturate_int16(v * 32768.0f);
             }
@@ -419,30 +419,39 @@ static void VS_CC FadeOutFree(void *instanceData, VSCore *core, const VSAPI *vsa
 
 static void VS_CC FadeOutGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
     BlankClipData *d = (BlankClipData *)instanceData;
+    VSVideoInfo clip1info = *vsapi->getVideoInfo(d->clip1);
 
     vsapi->getAudio(d->clip1, lpBuffer, lStart, lSamples);
 
+    int totalNumberOfSamples = clip1info.numFrames * 48000 / 24;
     int samplesToFadeOut = d->fade_duration * (48000 / 24);
-    int cutoff = lSamples - samplesToFadeOut;
-    if (cutoff < 0) {
-        cutoff = 0;
-        samplesToFadeOut = lSamples;
-    }
+    int notCovered = totalNumberOfSamples - (lStart + lSamples);
 
     unsigned int j = 0;
     short* samples = (short*)lpBuffer;
-    for (unsigned int i = cutoff; i < lSamples; i++) {
-        for (int o = 0; o < 2; o++) {
-            samples[o + i * 2] = samples[o + i * 2] - ((samples[o + i * 2] / samplesToFadeOut) * (j + 1));
+
+    if (notCovered < samplesToFadeOut) { // Needs of fade out
+        int covered = totalNumberOfSamples - (samplesToFadeOut - notCovered);
+        for (unsigned int i = covered - lStart; i < lSamples; i++) {
+            for (int o = 0; o < 2; o++) {
+                samples[o + i * 2] = samples[o + i * 2] - ((samples[o + i * 2] / samplesToFadeOut) * (j + 1));
+            }
+            j++;
         }
-        j++;
     }
     j = 0;
-    for (unsigned int i = 0; i < samplesToFadeOut; i++) {
-        for (int o = 0; o < 2; o++) {
-            samples[o + i * 2] = samples[o + i * 2] - ((samples[o + i * 2] / samplesToFadeOut) * (samplesToFadeOut - j));
+
+    if (lStart < samplesToFadeOut) {
+        int covered = samplesToFadeOut - lStart;
+        if (covered > lSamples) {
+            covered = lSamples;
         }
-        j++;
+        for (unsigned int i = 0; i < covered; i++) {
+            for (int o = 0; o < 2; o++) {
+                samples[o + i * 2] = samples[o + i * 2] - ((samples[o + i * 2] / samplesToFadeOut) * (samplesToFadeOut - j));
+            }
+            j++;
+        }
     }
 }
 
