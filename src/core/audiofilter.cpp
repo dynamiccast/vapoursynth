@@ -161,46 +161,11 @@ typedef struct {
     Tone *tone;
     VSNodeRef *clip1;
     VSNodeRef *clip2;
+    VSVideoInfo clip1info;
     size_t tempbuffer_size;
     signed char *tempbuffer;
     float fade_duration;
 } BlankClipData;
-
-static const VSFrameRef *VS_CC ToneGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
-    BlankClipData *d = (BlankClipData *)* instanceData;
-
-    if (activationReason == arInitial) {
-        VSFrameRef *frame = NULL;
-        if (!d->f) {
-            frame = vsapi->newVideoFrame(d->vi.format, d->vi.width, d->vi.height, 0, core);
-            int bytesPerSample = (d->vi.format->id == pfCompatYUY2) ? 4 : d->vi.format->bytesPerSample;
-
-            for (int plane = 0; plane < d->vi.format->numPlanes; plane++) {
-                switch (bytesPerSample) {
-                case 1:
-                    vs_memset8(vsapi->getWritePtr(frame, plane), d->color[plane], vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane));
-                    break;
-                case 2:
-                    vs_memset16(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 2);
-                    break;
-                case 4:
-                    vs_memset32(vsapi->getWritePtr(frame, plane), d->color[plane], (vsapi->getStride(frame, plane) * vsapi->getFrameHeight(frame, plane)) / 4);
-                    break;
-                }
-            }
-
-            if (d->vi.fpsNum > 0) {
-                VSMap *frameProps = vsapi->getFramePropsRW(frame);
-                vsapi->propSetInt(frameProps, "_DurationNum", d->vi.fpsDen, paReplace);
-                vsapi->propSetInt(frameProps, "_DurationDen", d->vi.fpsNum, paReplace);
-            }
-        }
-
-        return frame;
-    }
-
-    return 0;
-}
 
 static void VS_CC ToneGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
     BlankClipData *d = (BlankClipData *)instanceData;
@@ -210,6 +175,7 @@ static void VS_CC ToneGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceD
 
 static void VS_CC ToneInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
     BlankClipData *d = (BlankClipData *)* instanceData;
+
     vsapi->setVideoInfo(&d->vi, 1, node);
     vsapi->setAudioInfo(node);
 }
@@ -279,7 +245,7 @@ static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     Tone *tone = new Tone(length, frequency, samplerate, channels, level, type);
     data->tone = tone;
 
-    vsapi->createFilter(in, out, "Tone", ToneInit, ToneGetFrame, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
+    vsapi->createFilter(in, out, "Tone", ToneInit, NULL, ToneFree, ToneGetAudio, fmParallel, nfNoCache, data, core);
 }
 
 static const VSFrameRef *VS_CC MixAudioGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
@@ -489,8 +455,53 @@ static void VS_CC FadeOutCreate(const VSMap *in, VSMap *out, void *userData, VSC
     vsapi->createFilter(in, out, "FadeOut", FadeOutInit, MixAudioGetFrame, FadeOutFree, FadeOutGetAudio, fmParallel, nfNoCache, data, core);
 }
 
+static void VS_CC AudioDubInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+
+    d->clip1info.hasAudio = true;
+
+    vsapi->setVideoInfo(&d->clip1info, 1, node);
+    vsapi->setAudioInfo(node);
+}
+
+static void VS_CC AudioDubFree(void *instanceData, VSCore *core, const VSAPI *vsapi) {
+}
+
+static void VS_CC AudioDubGetAudio(VSCore *core, const VSAPI *vsapi, void *instanceData, void *lpBuffer, long lStart, long lSamples) {
+    BlankClipData *d = (BlankClipData *)instanceData;
+
+    vsapi->getAudio(d->clip2, lpBuffer, lStart, lSamples);
+}
+
+static const VSFrameRef *VS_CC AudioDubGetFrame(int n, int activationReason, void **instanceData, void **frameData, VSFrameContext *frameCtx, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *d = (BlankClipData *)* instanceData;
+
+    return vsapi->getFrame(n, d->clip1, NULL, 0);
+}
+
+static void VS_CC AudioDubCreate(const VSMap *in, VSMap *out, void *userData, VSCore *core, const VSAPI *vsapi) {
+    BlankClipData *data = (BlankClipData*)malloc(sizeof(BlankClipData));
+    int err;
+
+    data = (BlankClipData*)malloc(sizeof(BlankClipData));
+
+    VSNodeRef *clip1 = vsapi->propGetNode(in, "clip1", 0, &err);
+    VSNodeRef *clip2 = vsapi->propGetNode(in, "clip2", 0, &err);
+
+    data->vi = *vsapi->getVideoInfo(clip1);
+
+    VSVideoInfo clip1info = *vsapi->getVideoInfo(clip1);
+
+    data->clip1 = clip1;
+    data->clip1info = clip1info;
+    data->clip2 = clip2;
+
+    vsapi->createFilter(in, out, "AudioDub", AudioDubInit, AudioDubGetFrame, MixAudioFree, AudioDubGetAudio, fmParallel, nfNoCache, data, core);
+}
+
 void VS_CC audioInitialize(VSConfigPlugin configFunc, VSRegisterFunction registerFunc, VSPlugin *plugin) {
     registerFunc("Tone", "length:float:opt;frequency:float:opt;samplerate:int:opt;channels:int:opt;type:data:opt;level:float:opt", ToneCreate, 0, plugin);
     registerFunc("MixAudio", "clip1:clip;clip2:clip;clip1_factor:float:opt;clip2_factor:float:opt", MixAudioCreate, 0, plugin);
     registerFunc("FadeOut", "clip1:clip;num_frames:float", FadeOutCreate, 0, plugin);
+    registerFunc("AudioDub", "clip1:clip;clip2:clip", AudioDubCreate, 0, plugin);
 }

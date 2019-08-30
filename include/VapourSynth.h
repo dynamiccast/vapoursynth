@@ -207,8 +207,7 @@ typedef struct VSVideoInfo {
     int numFrames; /* api 3.2 - no longer allowed to be 0 */
     int flags;
 
-    int audio_samples_per_second;
-
+    int hasAudio;
 } VSVideoInfo;
 
 typedef enum VSActivationReason {

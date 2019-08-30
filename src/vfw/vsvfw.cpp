@@ -509,7 +509,10 @@ STDMETHODIMP VapourSynthFile::Info(AVIFILEINFOW *pfi, LONG lSize) {
     afi.dwFlags = AVIFILEINFO_HASINDEX | AVIFILEINFO_ISINTERLEAVED;
     afi.dwCaps = AVIFILECAPS_CANREAD | AVIFILECAPS_ALLKEYFRAMES | AVIFILECAPS_NOCOMPRESSION;
 
-    afi.dwStreams = 2;
+    int nrStreams = 1;
+    if (vi->hasAudio == true)	nrStreams = 2;
+
+    afi.dwStreams = nrStreams;
     afi.dwSuggestedBufferSize = 0;
     afi.dwWidth = vi->width;
     afi.dwHeight = vi->height;
@@ -562,7 +565,7 @@ STDMETHODIMP VapourSynthFile::GetStream(PAVISTREAM *ppStream, DWORD fccType, LON
 
         *ppStream = (IAVIStream *)casr;
 
-    } else if (fccType == streamtypeAUDIO) {
+    } else if (fccType == streamtypeAUDIO && vi->hasAudio) {
         //return AVIERR_NODATA;
 
         if ((casr = new(std::nothrow)VapourSynthStream(this, true)) == 0)
@@ -861,7 +864,7 @@ STDMETHODIMP VapourSynthStream::Read(LONG lStart, LONG lSamples, LPVOID lpBuffer
             result = S_OK;
         else {
             if (lSamples == AVISTREAMREAD_CONVENIENT)
-                lSamples = videoInfo->audio_samples_per_second;
+                lSamples = 48000;
 
             int bytes = lSamples * 4;
             if (lpBuffer && bytes > cbBuffer) {
