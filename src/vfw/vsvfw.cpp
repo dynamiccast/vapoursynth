@@ -693,15 +693,16 @@ STDMETHODIMP_(LONG) VapourSynthStream::Info(AVISTREAMINFOW *psi, LONG lSize) {
     }
     else {
         wcscpy(asi.szName, L"VapourSynth Audio #1");
+        
+        int bytes_per_sample = sizeof(short) * vi->channels;
         asi.fccHandler = 0;
-        asi.dwScale = 4;
-        asi.dwRate = 192000;
-        asi.dwSampleSize = 4;
-        asi.dwLength = vi->numFrames * 48000 / 24;
+        asi.dwScale = bytes_per_sample;
+        asi.dwRate = vi->audio_samplerate * bytes_per_sample;
+        asi.dwSampleSize = bytes_per_sample;
+        asi.dwLength = vi->numFrames * vi->audio_samplerate * vi->fpsDen / vi->fpsNum;
         asi.dwQuality = 0;
     }
 
-    // Maybe should return AVIERR_BUFFERTOOSMALL for lSize < sizeof(asi)
     memset(psi, 0, lSize);
     memcpy(psi, &asi, std::min(static_cast<size_t>(lSize), sizeof(asi)));
     return S_OK;
@@ -864,7 +865,7 @@ STDMETHODIMP VapourSynthStream::Read(LONG lStart, LONG lSamples, LPVOID lpBuffer
             result = S_OK;
         else {
             if (lSamples == AVISTREAMREAD_CONVENIENT)
-                lSamples = 48000;
+                lSamples = videoInfo->audio_samplerate;
 
             int bytes = lSamples * 4;
             if (lpBuffer && bytes > cbBuffer) {
@@ -935,10 +936,10 @@ STDMETHODIMP VapourSynthStream::ReadFormat(LONG lPos, LPVOID lpFormat, LONG *lpc
 
        pcm.wBitsPerSample = 16;
        pcm.wf.wFormatTag = WAVE_FORMAT_PCM;
-       pcm.wf.nChannels = 2;
-       pcm.wf.nSamplesPerSec = 48000L;
-       pcm.wf.nAvgBytesPerSec = 192000L;
-       pcm.wf.nBlockAlign = 4;
+       pcm.wf.nChannels = vi->channels;
+       pcm.wf.nSamplesPerSec = vi->audio_samplerate;
+       pcm.wf.nBlockAlign = sizeof(short) * vi->channels;
+       pcm.wf.nAvgBytesPerSec = vi->audio_samplerate * pcm.wf.nBlockAlign;
        memcpy(lpFormat, &pcm, static_cast<size_t>(*lpcbFormat));
     }
     else {

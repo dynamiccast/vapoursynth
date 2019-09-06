@@ -219,11 +219,6 @@ static void VS_CC setVideoInfo(const VSVideoInfo *vi, int numOutputs, VSNode *c)
     c->setVideoInfo(vi, numOutputs);
 }
 
-static void VS_CC setAudioInfo(VSNode *c) VS_NOEXCEPT {
-    assert(c);
-    c->setAudioInfo();
-}
-
 static const VSFormat *VS_CC getFrameFormat(const VSFrameRef *f) VS_NOEXCEPT {
     assert(f);
     return f->frame->getFormat();
@@ -607,7 +602,6 @@ const VSAPI vs_internal_vsapi = {
 
     &getVideoInfo,
     &setVideoInfo,
-    &setAudioInfo,
     &getFrameFormat,
     &getFrameWidth,
     &getFrameHeight,

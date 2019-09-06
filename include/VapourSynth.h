@@ -208,6 +208,8 @@ typedef struct VSVideoInfo {
     int flags;
 
     int hasAudio;
+    int audio_samplerate;
+    int channels;
 } VSVideoInfo;
 
 typedef enum VSActivationReason {
@@ -295,7 +297,6 @@ struct VSAPI {
 
     const VSVideoInfo *(VS_CC *getVideoInfo)(VSNodeRef *node) VS_NOEXCEPT;
     void (VS_CC *setVideoInfo)(const VSVideoInfo *vi, int numOutputs, VSNode *node) VS_NOEXCEPT;
-    void (VS_CC *setAudioInfo)(VSNode *node) VS_NOEXCEPT;
     const VSFormat *(VS_CC *getFrameFormat)(const VSFrameRef *f) VS_NOEXCEPT;
     int (VS_CC *getFrameWidth)(const VSFrameRef *f, int plane) VS_NOEXCEPT;
     int (VS_CC *getFrameHeight)(const VSFrameRef *f, int plane) VS_NOEXCEPT;

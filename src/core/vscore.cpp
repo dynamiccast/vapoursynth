@@ -845,14 +845,14 @@ void VSNode::setVideoInfo(const VSVideoInfo *vi, int numOutputs) {
         if (num != vi[i].fpsNum || den != vi[i].fpsDen)
             vsFatal(("setVideoInfo: The frame rate specified by " + name + " must be a reduced fraction. (Instead, it is " + std::to_string(vi[i].fpsNum) + "/" + std::to_string(vi[i].fpsDen) + ".)").c_str());
 
+        if (vi[i].hasAudio) {
+            hasAu = true;
+        }
+
         this->vi.push_back(vi[i]);
         this->vi[i].flags = flags;
     }
     hasVi = true;
-}
-
-void VSNode::setAudioInfo() {
-    hasAu = true;
 }
 
 PVideoFrame VSNode::getFrameInternal(int n, int activationReason, VSFrameContext &frameCtx) {

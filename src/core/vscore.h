@@ -515,7 +515,6 @@ public:
     const VSVideoInfo &getVideoInfo(int index);
 
     void setVideoInfo(const VSVideoInfo *vi, int numOutputs);
-    void setAudioInfo();
 
     size_t getNumOutputs() const {
         return vi.size();

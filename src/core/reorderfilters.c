@@ -503,7 +503,7 @@ static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanc
     while (readSamples != lSamples && i < d->numclips) {
         VSNodeRef *node = d->node[i];
         VSVideoInfo *videoInfo = vsapi->getVideoInfo(node);
-        int samples = ((__int64)(videoInfo->numFrames) * 48000 * 1 /*videoInfo->fpsDen*/ / /*videoInfo->fpsNum*/ 24);
+        int samples = ((__int64)(videoInfo->numFrames) * videoInfo->audio_samplerate * videoInfo->fpsDen / videoInfo->fpsNum);
 
         if (samples <= lStart) {
             lStart = lStart - samples;
