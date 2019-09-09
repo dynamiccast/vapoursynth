@@ -210,6 +210,7 @@ typedef struct VSVideoInfo {
     int hasAudio;
     int audio_samplerate;
     int channels;
+    uint64_t numAudioSample;
 } VSVideoInfo;
 
 typedef enum VSActivationReason {

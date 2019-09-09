@@ -803,7 +803,7 @@ instanceData(instanceData), name(name), init(init), filterGetFrame(getFrame), fr
         throw VSException("Filter " + name + " didn't set video or audio");
     }
 
-    if (hasVi) {
+    if (hasVi && !hasAu) {
         for (const auto &iter : vi) {
             if (iter.numFrames <= 0) {
                 core->filterInstanceDestroyed();
@@ -835,18 +835,20 @@ void VSNode::setVideoInfo(const VSVideoInfo *vi, int numOutputs) {
     if (numOutputs < 1)
         vsFatal("setVideoInfo: Video filter %s needs to have at least one output (%d were given).", name.c_str(), numOutputs);
     for (int i = 0; i < numOutputs; i++) {
-        if ((!!vi[i].height) ^ (!!vi[i].width))
-            vsFatal("setVideoInfo: Variable dimension clips must have both width and height set to 0. Dimensions given by filter %s: %dx%d.", name.c_str(), vi[i].width, vi[i].height);
-        if (vi[i].format && !core->isValidFormatPointer(vi[i].format))
-            vsFatal("setVideoInfo: The VSFormat pointer passed by %s was not obtained from registerFormat() or getFormatPreset().", name.c_str());
-        int64_t num = vi[i].fpsNum;
-        int64_t den = vi[i].fpsDen;
-        vs_normalizeRational(&num, &den);
-        if (num != vi[i].fpsNum || den != vi[i].fpsDen)
-            vsFatal(("setVideoInfo: The frame rate specified by " + name + " must be a reduced fraction. (Instead, it is " + std::to_string(vi[i].fpsNum) + "/" + std::to_string(vi[i].fpsDen) + ".)").c_str());
-
         if (vi[i].hasAudio) {
             hasAu = true;
+        }
+        else {
+            if ((!!vi[i].height) ^ (!!vi[i].width))
+                vsFatal("setVideoInfo: Variable dimension clips must have both width and height set to 0. Dimensions given by filter %s: %dx%d.", name.c_str(), vi[i].width, vi[i].height);
+            if (vi[i].format && !core->isValidFormatPointer(vi[i].format))
+                vsFatal("setVideoInfo: The VSFormat pointer passed by %s was not obtained from registerFormat() or getFormatPreset().", name.c_str());
+            int64_t num = vi[i].fpsNum;
+            int64_t den = vi[i].fpsDen;
+            vs_normalizeRational(&num, &den);
+            if (num != vi[i].fpsNum || den != vi[i].fpsDen)
+                vsFatal(("setVideoInfo: The frame rate specified by " + name + " must be a reduced fraction. (Instead, it is " + std::to_string(vi[i].fpsNum) + "/" + std::to_string(vi[i].fpsDen) + ".)").c_str());
+
         }
 
         this->vi.push_back(vi[i]);
