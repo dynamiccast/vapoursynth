@@ -246,13 +246,8 @@ static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore
         level = 1.0;
     }
 
-    data->vi.width = 640;
-    data->vi.height = 480;
-    data->vi.fpsNum = 24;
-    data->vi.fpsDen = 1;
-
-    data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
-    data->vi.numFrames = 0; // int64ToIntS((data->vi.fpsNum * length) / data->vi.fpsDen);
+    data->vi.format = vsapi->getFormatPreset(pfAudioOnly, core);
+    data->vi.numFrames = 0;
 
     data->vi.channels = channels;
     data->vi.audio_samplerate = samplerate;
@@ -330,17 +325,13 @@ static void VS_CC MixAudioCreate(const VSMap *in, VSMap *out, void *userData, VS
     VSNodeRef *clip2 = vsapi->propGetNode(in, "clip2", 0, &err);
     VSVideoInfo clip1info = *vsapi->getVideoInfo(clip1);
 
-    data->vi.width = 640;
-    data->vi.height = 480;
-    data->vi.fpsNum = 24;
-    data->vi.fpsDen = 1;
     data->clip1 = clip1;
     data->clip2 = clip2;
     data->tempbuffer = NULL;
     data->tempbuffer_size = 0;
 
-    data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
-    data->vi.numFrames = clip1info.numFrames;
+    data->vi.numFrames = 0;
+    data->vi.format = vsapi->getFormatPreset(pfAudioOnly, core);
     data->vi.numAudioSample = clip1info.audio_samplerate;
 
     data->vi.audio_samplerate = clip1info.audio_samplerate;
@@ -416,7 +407,7 @@ static void VS_CC FadeInOutCreate(const VSMap *in, VSMap *out, void *userData, V
     data->clip1 = clip1;
     data->fade_duration = num_frames;
 
-    data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
+    data->vi.format = clip1info.format;
     data->vi.numFrames = clip1info.numFrames;
     data->vi.audio_samplerate = clip1info.audio_samplerate;
     data->vi.channels = clip1info.channels;

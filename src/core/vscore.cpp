@@ -1127,6 +1127,7 @@ void VSCore::registerFormats() {
 
     registerFormat(cmCompat, stInteger, 32, 0, 0, "CompatBGR32", pfCompatBGR32);
     registerFormat(cmCompat, stInteger, 16, 1, 0, "CompatYUY2", pfCompatYUY2);
+    registerFormat(cmCompat, stInteger, 0, 0, 0, "AudioOnly", pfAudioOnly);
 }
 
 

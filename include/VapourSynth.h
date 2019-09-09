@@ -137,7 +137,8 @@ typedef enum VSPresetFormat {
     /* special for compatibility, if you implement these in any filter I'll personally kill you */
     /* I'll also change their ids around to break your stuff regularly */
     pfCompatBGR32 = cmCompat + 10,
-    pfCompatYUY2
+    pfCompatYUY2,
+    pfAudioOnly
 } VSPresetFormat;
 
 typedef enum VSFilterMode {
