@@ -483,10 +483,13 @@ typedef struct {
     VSVideoInfo vi;
     int *numframes;
     int numclips;
+    uint64_t numAudioSample;
 } SpliceData;
 
 static void VS_CC spliceInit(VSMap *in, VSMap *out, void **instanceData, VSNode *node, VSCore *core, const VSAPI *vsapi) {
     SpliceData *d = (SpliceData *) * instanceData;
+
+    d->vi.numAudioSample = d->numAudioSample;
 
     vsapi->setVideoInfo(&d->vi, 1, node);
 }
@@ -504,7 +507,7 @@ static void VS_CC spliceGetAudio(VSCore *core, const VSAPI *vsapi, void *instanc
     while (readSamples != lSamples && i < d->numclips) {
         VSNodeRef *node = d->node[i];
         VSVideoInfo *videoInfo = vsapi->getVideoInfo(node);
-        int samples = 48000; // ((__int64)(videoInfo->numFrames) * videoInfo->audio_samplerate * videoInfo->fpsDen / videoInfo->fpsNum); // Replace fpsDen et fpsNum
+        int samples = videoInfo->numAudioSample; // ((__int64)(videoInfo->numFrames) * videoInfo->audio_samplerate * videoInfo->fpsDen / videoInfo->fpsNum); // Replace fpsDen et fpsNum
 
         if (samples <= lStart) {
             lStart = lStart - samples;
@@ -610,15 +613,18 @@ static void VS_CC spliceCreate(const VSMap *in, VSMap *out, void *userData, VSCo
         }
 
         d.numframes = malloc(sizeof(d.numframes[0]) * d.numclips);
+        d.numAudioSample = 0;
         d.vi.numFrames = 0;
         d.vi.hasAudio = 1;
         d.vi.audio_samplerate = 48000;
         d.vi.channels = 2; // Hard coded
 
         for (int i = 0; i < d.numclips; i++) {
-            d.numframes[i] = (vsapi->getVideoInfo(d.node[i]))->numFrames;
+            VSVideoInfo *videoInfo = vsapi->getVideoInfo(d.node[i]);
+
+            d.numframes[i] = videoInfo->numFrames;
             d.vi.numFrames += d.numframes[i];
-            d.vi.numAudioSample += (vsapi->getVideoInfo(d.node[i]))->numAudioSample;
+            d.numAudioSample += videoInfo->numAudioSample;
 
             // did it overflow?
             if (d.vi.numFrames < d.numframes[i]) {
