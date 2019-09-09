@@ -252,7 +252,7 @@ static void VS_CC ToneCreate(const VSMap *in, VSMap *out, void *userData, VSCore
     data->vi.fpsDen = 1;
 
     data->vi.format = vsapi->getFormatPreset(pfRGB24, core);
-    data->vi.numFrames = int64ToIntS((data->vi.fpsNum * length) / data->vi.fpsDen);
+    data->vi.numFrames = 0; // int64ToIntS((data->vi.fpsNum * length) / data->vi.fpsDen);
 
     data->vi.channels = channels;
     data->vi.audio_samplerate = samplerate;
@@ -365,8 +365,8 @@ static void VS_CC FadeInOutGetAudio(VSCore *core, const VSAPI *vsapi, void *inst
 
     vsapi->getAudio(d->clip1, lpBuffer, lStart, lSamples);
 
-    int totalNumberOfSamples = clip1info.numFrames * clip1info.audio_samplerate / clip1info.fpsNum / clip1info.fpsDen;
-    int samplesToFadeOut = d->fade_duration * (clip1info.audio_samplerate / clip1info.fpsNum / clip1info.fpsDen);
+    int totalNumberOfSamples = clip1info.numAudioSample;
+    int samplesToFadeOut = d->fade_duration;
     int notCovered = totalNumberOfSamples - (lStart + lSamples);
 
     unsigned int j = 0;
